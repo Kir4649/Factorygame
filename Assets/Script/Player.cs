@@ -3,36 +3,29 @@ using UnityEngine.InputSystem;
 
 public class Player : MonoBehaviour
 {
-    // パラメータ
-    public Transform neck;                  // プレイヤーの首のTransformを指定
-    public float sensitivity = 2.0f;     // マウス感度（視点の移動の速さを調整）
-    public float minVertical = -90.0f;   // 視点の最小角度（縦の回転制限）
-    public float maxVertical = 90.0f;    // 視点の最大角度（縦の回転制限）
+    [SerializeField] private float sensitivity = 0.5f; // マウス感度
+    private Vector2 lookInput;
+    private float rotationX = 0f;
 
-    // 演算用変数
-    private float rotationX = 0f;       // 縦方向の回転角度（首の回転）
-
-    // ゲーム開始時に呼ばれる
-    void Start()
+    // PlayerInputコンポーネントやInputAction経由で呼び出す（SendMessage方式などの場合）
+    public void OnLook(InputValue value)
     {
-        // カーソルを非表示＆ロック
-        Cursor.lockState = CursorLockMode.Locked;   // カーソルを画面中央に固定
-        Cursor.visible = false;                     // カーソルを非表示にする
+        lookInput = value.Get<Vector2>();
     }
 
-    // 毎フレーム実行される
     void Update()
     {
-        // マウス入力の取得
-        float mouseX = Input.GetAxis("Mouse X") * sensitivity;  // 横のマウス移動量を取得し、感度で調整
-        float mouseY = Input.GetAxis("Mouse Y") * sensitivity;  // 縦のマウス移動量を取得し、感度で調整
+        // または Update内で直接取得する場合（InputActionフィールドを保持している場合など）
+        float mouseX = lookInput.x * sensitivity;
+        float mouseY = lookInput.y * sensitivity;
 
-        // Player（体）の回転（左右）
-        transform.Rotate(0, mouseX, 0);   // プレイヤー（体）の左右の回転をマウスX方向の入力に合わせて行う
+        rotationX -= mouseY;
+        rotationX = Mathf.Clamp(-90, rotationX, 90f); // 上下の角度制限
 
-        // Neck（首）の回転（上下）
-        rotationX -= mouseY; // マウスY方向の入力によって縦方向の回転を更新
-        rotationX = Mathf.Clamp(rotationX, minVertical, maxVertical);   // 回転角度を指定された範囲に制限
-        neck.localRotation = Quaternion.Euler(rotationX, 0, 0);         // 首の回転を設定。縦方向のみ回転させる
+        // カメラ（上下回転）
+        transform.localRotation = Quaternion.Euler(0f, rotationX, 0f);
+
+        // プレイヤー本体（左右回転）
+        transform.parent.Rotate(Vector3.up * mouseX);
     }
 }
